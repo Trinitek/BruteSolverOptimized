@@ -21,7 +21,7 @@ proc permute array, arrayLength, h_heap
     ; Allocate memory for the array
     invoke HeapCreate, 0, 0, 0
     mov [h_heap], rax
-    mov rax, 32
+    mov rax, 4
     mul edx
     invoke HeapAlloc, [h_heap], 0, rax
     
