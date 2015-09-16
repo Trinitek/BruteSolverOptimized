@@ -1,2 +1,4 @@
 INCLUDE/
 java/
+*.exe
+*.dll
