@@ -4,6 +4,9 @@
 #include <windows.h>
 
 int main(void) {
+    
+    typedef double (*PERMUTE)(uint64_t array[], uint64_t arrayLength, double* distances[], uint64_t limit);
+    
     HMODULE salesDll = WINAPI LoadLibrary("salesman.dll");
     if (salesDll == NULL) {
         printf("Could not import SALESMAN.DLL: 0x%x\n", GetLastError());
@@ -12,7 +15,7 @@ int main(void) {
         printf("SALESMAN.DLL loaded at %x\n", salesDll);
     }
     
-    FARPROC permute = WINAPI GetProcAddress(salesDll, "permute");
+    PERMUTE permute = (PERMUTE) GetProcAddress(salesDll, "permute");
     if (permute == NULL) {
         printf("Could not find 'permute' in library: 0x%x\n", GetLastError());
         return 1;
@@ -27,9 +30,9 @@ int main(void) {
     double* distances[2] = {dist_1, dist_2};
     uint64_t limit = 2;
     
-    int i = permute(array, arrayLength, distances, limit);
+    double i = permute(array, arrayLength, distances, limit);
     
-    printf("%x\n", i);
+    printf("%f\n", i);
     
     FARPROC testcall = WINAPI GetProcAddress(salesDll, "testcall");
     if (permute == NULL) {

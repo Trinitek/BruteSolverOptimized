@@ -19,13 +19,19 @@ proc testcall
 endp
 
 ; double permute(uint32_t* array, uint32_t arrayLength, double** distances, uint32_t limit)
-proc permute array, arrayLength, distances, limit, h_heap
+proc permute array, arrayLength, distances, limit, h_heap, temp
 
     ; Save parameters to stack
     mov [array], rcx
     mov [arrayLength], rdx
     mov [distances], r8
     mov [limit], r9
+    
+    ; double r = 0.0
+    movlpd xmm1, [const.zero]
+    
+    ; double shortestDistance = 150000.0
+    movlpd xmm0, [const.shortest]
 
     ; Allocate (4 * arrayLength) bytes for the array
     ; int[] p = new int[array.length];
@@ -40,11 +46,10 @@ proc permute array, arrayLength, distances, limit, h_heap
     ; }
     mov rcx, [limit]            ; rcx = limit
     test rcx, rcx
-    jz for1.end                 ; if rcx == 0 then skip
+    jz for_1.end                 ; if rcx == 0 then skip
     mov r8, [array]             ; r8 = &array[0]
     mov r9, 1                   ; r9 = k + 1
-    movlpd xmm1, [const.zero]
-    for1:
+    for_1:
         
         mov rax, [array]
         add rax, r8             ; array[] = r8 + array_ptr
@@ -60,7 +65,7 @@ proc permute array, arrayLength, distances, limit, h_heap
     
         add r8, 4
         inc r9
-        loop for1
+        loop for_1
         .end:
         
     ; r += distances[array[0]][array.length];
@@ -89,8 +94,21 @@ proc permute array, arrayLength, distances, limit, h_heap
     add rbx, rax                ; rbx += rax
     addsd xmm1, [rbx]
     
+    ; if (r < shortestDistance) {
+    ;     shortestDistance = r;
+    ; }
+    if_1:
+        movsd xmm2, xmm1
+        comisd xmm2, xmm0
+        jnc .end
+        movsd xmm0, xmm1
+        .end:
+    
     ; Cleanup
     invoke HeapDestroy, [h_heap]
+    
+    ;; testing return value
+    movsd xmm0, [const.shortest]
     
     ret
 endp
@@ -99,6 +117,7 @@ section '.data' data readable
 
 const:
     .zero dq 0.0
+    .shortest dq 150000.0
 
 section '.idata' import data readable writeable
 
