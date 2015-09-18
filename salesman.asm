@@ -50,23 +50,30 @@ proc permute array, arrayLength, distances, limit, h_heap, p
     mov rcx, [limit]            ; rcx = limit
     test rcx, rcx
     jz for_1_end                ; if rcx == 0 then skip
-    mov r8, [array]             ; r8 = &array[0]
+    mov r8, [array]             ; r8 = array
     mov r9, 1                   ; r9 = k + 1
     for_1:
         
-        mov rax, [array]
-        add rax, r8             ; array[] = r8 + array_ptr
-        
+        mov rax, r8
+        mov rax, [rax]          ; rax = *(array + r8)
         shl rax, 3
-        add rax, [distances]    ; double_array[] = (array[k] * 8)
+        add rax, [distances]    ; rax = &distances[array[k]]
+        mov rax, [rax]          ; rax = distances[array[k]]
         
         mov rbx, r9
         shl rbx, 3
-        add rax, rbx            ; &double_array[k + 1] = double_array[] + (r9 * 8)
+        add rbx, r8             ; rbx = &array[k + 1]
+        mov rbx, [rbx]          ; rbx = array[k + 1]
+        shl rbx, 3
+        add rbx, rax            ; rbx = distances[array[k]][array[k + 1]]
         
-        addsd xmm1, [rax]
+        addsd xmm1, [rbx]
+        ;;
+        movsd xmm0, xmm1
+        jmp cleanup
+        ;;
     
-        add r8, 4
+        add r8, 8
         inc r9
         loop for_1
         for_1_end:
@@ -92,7 +99,6 @@ proc permute array, arrayLength, distances, limit, h_heap, p
     add rax, [distances]        ; rax = distances + *rax
     mov rax, [rax]              ; rax = *rax
     mov rbx, [arrayLength]
-    ;dec rbx
     shl rbx, 3                  ; rbx = (arrayLength - 1) * 8
     add rbx, rax                ; rbx += rax
     addsd xmm1, [rbx]
@@ -233,12 +239,15 @@ proc permute array, arrayLength, distances, limit, h_heap, p
             else_2_end:
         ; ... }
         
+        jmp while_1
         while_1_end:
     ; ... }
     
     ; Cleanup
     cleanup:
-    invoke HeapDestroy, [h_heap]
+    movsd xmm6, xmm0                    ; Save return value in nonvolatile SSE register
+    invoke HeapDestroy, [h_heap]        ; This will destroy xmm0 !!
+    movsd xmm0, xmm6
     
     ; return shortestDistance
     ;
@@ -253,6 +262,7 @@ section '.data' data readable
 const:
     .zero dq 0.0
     .shortest dq 150000.0
+    .test dq 1234.0
 
 section '.idata' import data readable writeable
 

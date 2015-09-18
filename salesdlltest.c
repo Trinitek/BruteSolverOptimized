@@ -33,12 +33,14 @@ int main(void) {
         printf("'permute' found at %x\n", permute);
     }
     
-    uint64_t arrayLength = 2;
-    uint64_t array[2] = {1, 2};
+    uint64_t arrayLength = 4;
+    uint64_t array[4] = {0, 1, 2, 3};
     double dist_1[2] = {4.0, 5.0};
-    double dist_2[2] = {8.0, 9.0};
-    double* distances[2] = {dist_1, dist_2};
-    uint64_t limit = 2;
+    double dist_2[2] = {5.0, 4.0};
+    double dist_3[2] = {7.0, 9.0};
+    double dist_4[2] = {6.0, 2.0};
+    double* distances[4] = {dist_1, dist_2, dist_3, dist_4};
+    uint64_t limit = 3;
     
     clock_t start, finish;
     start = clock();
@@ -47,6 +49,13 @@ int main(void) {
     
     printf("Result: %f\n", i);
     printf("Completed in %f milliseconds\n", (double) (finish - start));
+    
+    double r;
+    uint64_t k;
+    for (k = 0; k < limit; k++) {
+        r += distances[array[k]][array[k + 1]];
+    }
+    printf("%f", r);
     
     return 0;
 }
