@@ -69,8 +69,8 @@ proc permute array, arrayLength, distances, limit, h_heap, p
         
         addsd xmm1, [rbx]
         ;;
-        movsd xmm0, xmm1
-        jmp cleanup
+        ;movsd xmm0, xmm1
+        ;jmp cleanup
         ;;
     
         add r8, 8
