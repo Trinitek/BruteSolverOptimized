@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <windows.h>
+#include <time.h>
 
 int main(void) {
     
@@ -14,6 +15,15 @@ int main(void) {
     } else {
         printf("SALESMAN.DLL loaded at %x\n", salesDll);
     }
+    
+    FARPROC testcall = WINAPI GetProcAddress(salesDll, "testcall");
+    if (testcall == NULL) {
+        printf("Could not find 'testcall' in library: 0x%x\n", GetLastError());
+        return 1;
+    } else {
+        printf("'testcall' found at %x\n", testcall);
+    }
+    printf("testcall(34) returns %d\n", (uint64_t)testcall(34));
     
     PERMUTE permute = (PERMUTE) GetProcAddress(salesDll, "permute");
     if (permute == NULL) {
@@ -30,18 +40,13 @@ int main(void) {
     double* distances[2] = {dist_1, dist_2};
     uint64_t limit = 2;
     
+    clock_t start, finish;
+    start = clock();
     double i = permute(array, arrayLength, distances, limit);
+    finish = clock();
     
-    printf("%f\n", i);
-    
-    FARPROC testcall = WINAPI GetProcAddress(salesDll, "testcall");
-    if (permute == NULL) {
-        printf("Could not find 'testcall' in library: 0x%x\n", GetLastError());
-        return 1;
-    } else {
-        printf("'testcall' found at %x\n", testcall);
-    }
-    printf("%d\n", (uint64_t)testcall(34));
+    printf("Result: %f\n", i);
+    printf("Completed in %f milliseconds\n", (double) (finish - start));
     
     return 0;
 }

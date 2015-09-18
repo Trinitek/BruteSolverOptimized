@@ -237,6 +237,7 @@ proc permute array, arrayLength, distances, limit, h_heap, p
     ; ... }
     
     ; Cleanup
+    cleanup:
     invoke HeapDestroy, [h_heap]
     
     ; return shortestDistance
