@@ -18,7 +18,7 @@ proc testcall
     ret
 endp
 
-; double permute(uint32_t* array, uint32_t arrayLength, double** distances, uint32_t limit)
+; double permute(uint64_t* array, uint64_t arrayLength, double** distances, uint64_t limit)
 proc permute array, arrayLength, distances, limit, h_heap, p
 
     ; Save parameters to stack
