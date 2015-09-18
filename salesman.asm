@@ -240,6 +240,10 @@ proc permute array, arrayLength, distances, limit, h_heap, p
     invoke HeapDestroy, [h_heap]
     
     ; return shortestDistance
+    ;
+    ; If the function returns 0xFFFF instead, you are getting the integer value
+    ; and not the (double) value as you should be. Check your code.
+    mov rax, 0xFFFF
     ret
 endp
 
