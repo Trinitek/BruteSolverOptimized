@@ -28,9 +28,11 @@ macro save_volatile {
     push r11
     movsd xmm6, xmm0
     movsd xmm7, xmm1
+    movsd xmm8, xmm2
 }
 
 macro restore_volatile {
+    movsd xmm2, xmm8
     movsd xmm1, xmm7
     movsd xmm0, xmm6
     pop r11
@@ -52,6 +54,8 @@ macro save_nonvolatile {
     movlpd [rsp], xmm6
     sub rsp, 8
     movlpd [rsp], xmm7
+    sub rsp, 8
+    movlpd [rsp], xmm8
 }
 
 macro restore_nonvolatile {
@@ -87,7 +91,8 @@ macro handle {
         shl rax, 3
         add rax, distances      ; rax = &distances[rax]
         
-        addsd v, [rax]          ; v += distances[rax]
+        movlpd xmm2, [rax]
+        addsd v, xmm2           ; v += distances[rax]
     \}
     
     ; double v = 0
@@ -148,7 +153,8 @@ macro handle {
         add rax, [array]
         shl rax, 3
         add rax, distances
-        addsd v, [rax]
+        movlpd xmm2, [rax]
+        addsd v, xmm2
     
         comisd v, shortestDistance
                                 ; if v < shortestDistance then set CF
@@ -167,7 +173,8 @@ macro handle {
             add rax, eA
             shl rax, 3
             add rax, distances
-            addsd v, [rax]
+            movlpd xmm2, [rax]
+            addsd v, xmm2
         
             comisd v, shortestDistance
                                 ; if v < shortestDistance then set CF
@@ -197,17 +204,17 @@ proc testcall
 endp
 
 ; double permute(uint64_t* array, uint64_t arrayLength, double* distances)
-proc permute h_heap, p
+proc permute s_array, s_arrayLength, s_distances, h_heap, p
     
     ; Save nonvolatile registers, as required by the calling convention
     save_nonvolatile
     
     ; Initialize registers
     mov arrayLength, rdx        ; Move parameter out of volatile register
-    dec arrayLength             ; In Java, array.length represents (numberOfElements - 1)
-    mov mulv, rdx               ; mulv = arrayLength + 1
+    mov mulv, arrayLength
+    inc mulv                    ; mulv = arrayLength + 1
     mov limit, arrayLength
-    dec limit                   ; limit = arrayLength - 1
+    dec limit                   ; limit = arrayLength - 1 = mul - 2
     mov rax, arrayLength
     mul mulv
     mov eA, rax                 ; eA = arrayLength * mulv

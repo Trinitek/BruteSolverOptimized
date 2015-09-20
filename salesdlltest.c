@@ -33,8 +33,8 @@ int main(void) {
         printf("'permute' found at %x\n", permute);
     }
     
-    uint64_t arrayLength = 4;
-    uint64_t array[4] = {0, 1, 2, 3};
+    uint64_t arrayLength = 5;
+    uint64_t array[5] = {0, 1, 2, 3, 4};
     double dist_1[2] = {4.0, 5.0};
     double dist_2[2] = {5.0, 4.0};
     double dist_3[2] = {7.0, 9.0};
