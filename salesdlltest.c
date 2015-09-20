@@ -6,7 +6,7 @@
 
 int main(void) {
     
-    typedef double (*PERMUTE)(uint64_t array[], uint64_t arrayLength, double* distances[], uint64_t limit);
+    typedef double (*PERMUTE)(uint64_t array[], uint64_t arrayLength, double* distances[]);
     
     HMODULE salesDll = WINAPI LoadLibrary("salesman.dll");
     if (salesDll == NULL) {
@@ -40,22 +40,14 @@ int main(void) {
     double dist_3[2] = {7.0, 9.0};
     double dist_4[2] = {6.0, 2.0};
     double* distances[4] = {dist_1, dist_2, dist_3, dist_4};
-    uint64_t limit = 3;
     
     clock_t start, finish;
     start = clock();
-    double i = permute(array, arrayLength, distances, limit);
+    double i = permute(array, arrayLength, distances);
     finish = clock();
     
     printf("Result: %f\n", i);
     printf("Completed in %f milliseconds\n", (double) (finish - start));
-    
-    double r;
-    uint64_t k;
-    for (k = 0; k < limit; k++) {
-        r += distances[array[k]][array[k + 1]];
-    }
-    printf("%f", r);
     
     return 0;
 }
