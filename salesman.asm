@@ -4,6 +4,136 @@ entry DllMain
 
 include 'include/win64a.inc'
 
+define shortestDistance xmm0
+
+; --> All macro parameters are registers, not constants or pointers.
+; --> rax, rbx, and rdx are volatile.
+; --> Expects (double)0.0 to be defined in xmm7.
+; void handle(
+;   int array[], (PTR)
+;   int arrayLength,
+;   double distances2[], (PTR)
+;   int limit,
+;   int eA,
+;   int mulv)
+; TEMPS:
+;   double v
+;   int a
+;   int z
+;   int z2
+macro handle array*, arrayLength*, distances2*, limit*, eA*, mulv*, v*, a*, z* {
+    local return
+    
+    ; v += distances2[(a * mul) + (a = array[z + 1])]
+    macro addv1 \{
+        mov rax, a
+        mul mulv                ; rax = a * mulv
+        
+        mov rbx, z2
+        shl rbx, 3
+        add rbx, array          ; rbx = &array[z + 1]
+        
+        mov a, [rbx]            ; a = array[z + 1]
+        
+        add rax, a              ; rax = (a * mul) + (a = array[z + 1])
+        shl rax, 3
+        add rax, distances2     ; rax = &distances2[rax]
+        
+        addsd v, [rax]          ; v += distances2[rax]
+    \}
+    
+    ; double v = 0
+    movsd v, xmm7
+    
+    ; int a = array[0]
+    mov a, [array]
+    
+    ; for (int z = 0; z < 5; z++)
+    xor z, z
+    mov z2, z
+    inc z2
+    local for_1
+    local for_1_end
+    for_1:
+        cmp z, 5
+        jae for_1_end
+        
+        ; v += distances2[(a * mul) + (a = array[z + 1])]
+        addv1
+        
+        inc z
+        inc z2
+        jmp for_1
+        
+        for_1_end:
+    
+    ; for (int z = 5; z < limit; z++)
+    ; Using z and z2 values from previous loop
+    local for_2
+    local for_2_end
+    for_2:
+        cmp z, limit
+        jae for_2_end
+        
+        ; if ((v += distances2[(a * mul) + (a = array[z + 1])]) > shortestDistance)
+        local if_1
+        local if_1_end
+        if_1:
+            ; v += distances2[(a * mul) + (a = array[z + 1])]
+            addv1
+            
+            comisd shortestDistance, v
+                                ; if v > shortestDistance then set CF
+            jnc if_1_end        ; if CF is not set, escape
+            jmp return
+            
+            if_1_end:
+        
+        for_2_end:
+
+    ; if ((v += distances2[eA + array[0]]) < shortestDistance)
+    local if_2
+    local if_2_end
+    if_2:
+        ; v += distances2[eA + array[0]]
+        mov rax, eA
+        add rax, [array]
+        shl rax, 3
+        add rax, distances2
+        addsd v, [rax]
+    
+        comisd v, shortestDistance
+                                ; if v < shortestDistance then set CF
+        jnc if_2_end
+    
+        ; if ((v += distances2[eA + array[limit]]) < shortestDistance)
+        local if_3
+        local if_3_end
+        if_3:
+            ; v += distances2[eA + array[limit]]
+            mov rax, limit
+            shl rax, 3
+            add rax, array
+            mov rax, [rax]      ; rax = array[limit]
+            
+            add rax, eA
+            shl rax, 3
+            add rax, distances2
+            addsd v, [rax]
+        
+            comisd v, shortestDistance
+                                ; if v < shortestDistance then set CF
+            jnc if_3_end
+            movsd shortestDistance, v
+                                ; shortestDistance = v
+        
+            if_3_end:
+    
+        if_2_end:
+    
+    return:
+}
+
 section '.text' code readable executable
 
 proc DllMain hinstDLL, fdwReason, lpvReserved
