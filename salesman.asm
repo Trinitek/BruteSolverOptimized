@@ -28,11 +28,9 @@ macro save_volatile {
     push r11
     movsd xmm6, xmm0
     movsd xmm7, xmm1
-    movsd xmm8, xmm2
 }
 
 macro restore_volatile {
-    movsd xmm2, xmm8
     movsd xmm1, xmm7
     movsd xmm0, xmm6
     pop r11
@@ -54,8 +52,6 @@ macro save_nonvolatile {
     movlpd [rsp], xmm6
     sub rsp, 8
     movlpd [rsp], xmm7
-    sub rsp, 8
-    movlpd [rsp], xmm8
 }
 
 macro restore_nonvolatile {
@@ -91,8 +87,7 @@ macro handle {
         shl rax, 3
         add rax, distances      ; rax = &distances[rax]
         
-        movlpd xmm2, [rax]
-        addsd v, xmm2           ; v += distances[rax]
+        addsd v, [rax]          ; v += distances[rax]
     \}
     
     ; double v = 0
@@ -153,8 +148,7 @@ macro handle {
         add rax, [array]
         shl rax, 3
         add rax, distances
-        movlpd xmm2, [rax]
-        addsd v, xmm2
+        addsd v, [rax]
     
         comisd v, shortestDistance
                                 ; if v < shortestDistance then set CF
@@ -173,8 +167,7 @@ macro handle {
             add rax, eA
             shl rax, 3
             add rax, distances
-            movlpd xmm2, [rax]
-            addsd v, xmm2
+            addsd v, [rax]
         
             comisd v, shortestDistance
                                 ; if v < shortestDistance then set CF
