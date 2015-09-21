@@ -236,10 +236,6 @@ proc permute s_array, s_arrayLength, s_distances, h_heap, p
     mov p_array, rax
     restore_volatile
     
-    ;;;
-    ;jmp cleanup
-    ;;;
-    
     ; int i = 1
     mov i, 1
     
