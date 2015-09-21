@@ -283,6 +283,7 @@ proc permute s_array, s_arrayLength, s_distances, h_heap, p
             ; i = 1
             mov i, 1
             
+            jmp while_2
             while_2_end:
         
         ; p[i++] = 0
@@ -291,6 +292,7 @@ proc permute s_array, s_arrayLength, s_distances, h_heap, p
         xor rax, rax
         mov [p_active], rax
         
+        jmp while_1
         while_1_end:
     
     ; Cleanup
