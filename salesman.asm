@@ -139,8 +139,11 @@ macro handle {
             
             if_1_end:
         
+        inc z
+        jmp for_2
+        
         for_2_end:
-
+        
     ; if ((v += distances[eA + array[0]]) < shortestDistance)
     local if_2
     local if_2_end
@@ -168,7 +171,7 @@ macro handle {
             
             add rax, eA
             shl rax, 3
-            add rax, distances
+            add rax, distances  ; rax = &distances[eA + array[limit]]
             addsd v, [rax]
         
             comisd v, shortestDistance
@@ -232,6 +235,10 @@ proc permute s_array, s_arrayLength, s_distances, h_heap, p
     invoke HeapAlloc, [h_heap], 0x8, rdx
     mov p_array, rax
     restore_volatile
+    
+    ;;;
+    ;jmp cleanup
+    ;;;
     
     ; int i = 1
     mov i, 1
