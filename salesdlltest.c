@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <windows.h>
-#include <time.h>
 
 int main(void) {
     
@@ -57,19 +56,19 @@ int main(void) {
         449.9888887517113, 406.07634750130427, 318.7789202566569, 261.0900227890756, 353.34402499547093, 475.83400466969573, 327.28733553255614, 282.25166075685013, 0.0, 416.16342943608106, 
         213.52751579129094, 13.038404810405298, 278.1726082848561, 277.35897317375543, 117.66052864066182, 119.33985084622823, 464.5352516225222, 139.60659010233005, 416.16342943608106, 0.0};
     
-    clock_t start, finish;
+    uint64_t start, finish;
     double i;
-    start = clock();
+    start = GetTickCount64();
     i = permute(array, arrayLength, distances_A);
-    finish = clock();
+    finish = GetTickCount64();
     printf("Result: %f\n", i);
-    printf("Completed in %d milliseconds\n", (double) (finish - start));
+    printf("Completed in %d milliseconds\n", (finish - start));
     
-    start = clock();
+    start = GetTickCount64();
     i = permute(array, arrayLength, distances_B);
-    finish = clock();
+    finish = GetTickCount64();
     printf("Result: %f\n", i);
-    printf("Completed in %d milliseconds\n", (double) (finish - start));
+    printf("Completed in %d milliseconds\n", (finish - start));
     
     return 0;
 }
