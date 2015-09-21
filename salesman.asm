@@ -7,13 +7,13 @@ include 'include/win64a.inc'
 define array            rcx
 define arrayLength      r9
 define distances        r8
-define mulv             r9
+define mulv             r13
 define limit            r10
 define eA               rbx
 define a                r11
 define z                r12
-define z2               r13
 define p_array          r14
+define p_active         rsi
 define i                r15
 define v                xmm1
 define shortestDistance xmm0
@@ -44,6 +44,8 @@ macro restore_volatile {
 
 macro save_nonvolatile {
     push rbx
+    push rsi
+    push rdi
     push r12
     push r13
     push r14
@@ -63,6 +65,8 @@ macro restore_nonvolatile {
     pop r14
     pop r13
     pop r12
+    pop rdi
+    pop rsi
     pop rbx
 }
 
@@ -77,7 +81,8 @@ macro handle {
         mov rax, a
         mul mulv                ; rax = a * mulv
         
-        mov rdx, z2
+        mov rdx, z
+        inc rdx
         shl rdx, 3
         add rdx, array          ; rdx = &array[z + 1]
         
@@ -98,8 +103,6 @@ macro handle {
     
     ; for (int z = 0; z < 5; z++)
     xor z, z
-    mov z2, z
-    inc z2
     local for_1
     local for_1_end
     for_1:
@@ -110,13 +113,12 @@ macro handle {
         addv1
         
         inc z
-        inc z2
         jmp for_1
         
         for_1_end:
     
     ; for (int z = 5; z < limit; z++)
-    ; Using z and z2 values from previous loop
+    ; Using z value from previous loop
     local for_2
     local for_2_end
     for_2:
@@ -231,7 +233,62 @@ proc permute s_array, s_arrayLength, s_distances, h_heap, p
     mov p_array, rax
     restore_volatile
     
-    ; ;
+    ; int i = 1
+    mov i, 1
+    
+    ; while (i < arrayLength)
+    while_1:
+        cmp i, arrayLength
+        jae while_1_end
+        
+        mov p_active, i
+        shl p_active, 3
+        add p_active, p_array   ; p_active = p[i]
+        
+        ; while (p[i] < i)
+        while_2:
+            cmp p_active, i
+            jae while_2_end
+            
+            ; int j = i % 2 * p[i]
+            mov rax, i
+            and rax, 1          ; rax = i % 2
+            mul qword [p_active]; rax *= *p_active
+            
+            ; xchg(array[i], array[j])
+            shl rax, 3
+            add rax, array      ; rax = &array[j]
+            mov rdi, [rax]      ; rdi = array[j]
+            
+            mov rdx, i
+            shl rdx, 3
+            add rdx, array      ; rdx = &array[i]
+            
+            push rdi            ; save rdi
+            mov rdi, [rdx]      ; rdi = array[i]
+            mov [rax], rdi      ; array[j] = rdi
+            
+            pop rdi             ; restore rdi
+            mov [rdx], rdi      ; array[i] = rdi
+        
+            ; Handle permutation
+            handle
+        
+            ; p[i]++
+            inc qword [p_active]
+            
+            ; i = 1
+            mov i, 1
+            
+            while_2_end:
+        
+        ; p[i++] = 0
+        inc i
+        add p_active, 8
+        xor rax, rax
+        mov [p_active], rax
+        
+        while_1_end:
     
     ; Cleanup
     cleanup:
