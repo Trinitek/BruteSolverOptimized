@@ -5,7 +5,6 @@ entry DllMain
 include 'include/win64a.inc'
 
 define array            rcx
-;define arrayLength      [s_arrayLength]
 define distances        r8
 define mulv             r13
 define limit            r10
