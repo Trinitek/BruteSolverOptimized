@@ -3,11 +3,12 @@
 #include <stdint.h>
 #include <windows.h>
 
-typedef double (*PERMUTE)(uint64_t array[], uint64_t arrayLength, double distances[]);
+typedef double (*PERMUTE)(uint64_t array[], uint64_t arrayLength, double distances[], LPVOID heap_ptr);
 void testPermute(uint64_t array[], uint64_t arrayLength, double distances[]);
 
 PERMUTE permute;
 LARGE_INTEGER frequency;
+HANDLE h_heap;
 
 int main(void) {
     
@@ -75,20 +76,29 @@ int main(void) {
         160.262285020525, 95.70788891204319, 230.6013876801265, 181.86808406094787, 315.75306807693886, 290.7455932598119, 204.9780476051033, 236.63051367057463, 136.48809471891678, 0.0, 116.82465493208187, 
         232.07757323791543, 180.5103875127412, 284.01584462842914, 275.86228448267445, 432.3563345204971, 174.1866814656046, 144.9413674559475, 264.3671689147501, 252.96047122030745, 116.82465493208187, 0.0};
     
+    h_heap = HeapCreate(0, 0, 0);
+    
     testPermute(array_AB, arrayLength_AB, distances_A);
     testPermute(array_AB, arrayLength_AB, distances_B);
     testPermute(array_C, arrayLength_C, distances_C);
+    
+    HeapDestroy(h_heap);
     
     return 0;
 }
 
 void testPermute(uint64_t array[], uint64_t arrayLength, double distances[]) {
+    //HANDLE h_heap = HeapCreate(0, 0, 0);
+    LPVOID heap_ptr = HeapAlloc(h_heap, 0x8, arrayLength * sizeof(uint64_t));
+    
     LARGE_INTEGER start, finish;
     QueryPerformanceCounter(&start);
-    double i = permute(array, arrayLength, distances);
+    double i = permute(array, arrayLength, distances, heap_ptr);
     QueryPerformanceCounter(&finish);
     printf("==============================\n");
     printf("Result: %f\n", i);
     printf("Completed in %f milliseconds\n", (double)((finish.QuadPart - start.QuadPart)*1000)/frequency.QuadPart);
+    
+    //HeapDestroy(h_heap);
     return;
 }

@@ -11,7 +11,7 @@ define limit            r10
 define eA               rbx
 define a                r11
 define z                r12
-define p_array          r14
+define p_array          r9 ;r14
 define p_active         rsi
 define i                r15
 define v                xmm1
@@ -204,8 +204,8 @@ proc testcall
     ret
 endp
 
-; double permute(uint64_t* array, uint64_t arrayLength, double* distances)
-proc permute s_arrayLength, h_heap
+; double permute(uint64_t* array, uint64_t arrayLength, double* distances, LPVOID heap_ptr)
+proc permute s_arrayLength ;, h_heap
     
     ; Save nonvolatile registers, as required by the calling convention
     save_nonvolatile
@@ -230,15 +230,15 @@ proc permute s_arrayLength, h_heap
 
     ; Allocate (8 * (arrayLength)) bytes for the array, initialize to NULL
     ; int[] p = new int[array.length];
-    save_volatile
-    invoke HeapCreate, 0, 0, 0
-    mov [h_heap], rax
-    mov r8, [s_arrayLength]
-    shl r8, 3
-    invoke HeapAlloc, rax, 0x8, r8
-    mov rdi, rax                ; Save return value in non-volatile register
-    restore_volatile            ; (p_array is an alias to a volatile register)
-    mov p_array, rdi
+    ;save_volatile
+    ;invoke HeapCreate, 0, 0, 0
+    ;mov [h_heap], rax
+    ;mov r8, [s_arrayLength]
+    ;shl r8, 3
+    ;invoke HeapAlloc, rax, 0x8, r8
+    ;mov rdi, rax                ; Save return value in non-volatile register
+    ;restore_volatile            ; (p_array is an alias to a volatile register)
+    ;mov p_array, rdi
     
     ; int i = 1
     mov i, 1
@@ -270,9 +270,11 @@ proc permute s_arrayLength, h_heap
             mov rdx, i
             shl rdx, 3
             add rdx, array      ; rdx = &array[i]
-            mov r9, [rdx]       ; r9 = array[i]
+            ;mov r9, [rdx]       ; r9 = array[i]
+            mov r14, [rdx]
             
-            mov [rax], r9       ; array[j] = r9
+            ;mov [rax], r9       ; array[j] = r9
+            mov [rax], r14
             mov [rdx], rdi      ; array[i] = rdi
         
             ; Handle permutation
@@ -306,9 +308,9 @@ proc permute s_arrayLength, h_heap
     
     ; Cleanup
     cleanup:
-    save_volatile
-    invoke HeapDestroy, [h_heap]
-    restore_volatile
+    ;save_volatile
+    ;invoke HeapDestroy, [h_heap]
+    ;restore_volatile
     
     ; return shortestDistance
     ;
@@ -327,13 +329,13 @@ const:
     .shortest dq 150000.0
     .test dq 1234.0
 
-section '.idata' import data readable writeable
-
-library kernel32,'KERNEL32.DLL'
-import kernel32,\
-    HeapCreate, 'HeapCreate',\
-    HeapAlloc, 'HeapAlloc',\
-    HeapDestroy, 'HeapDestroy'
+;section '.idata' import data readable writeable
+;
+;library kernel32,'KERNEL32.DLL'
+;import kernel32,\
+;    HeapCreate, 'HeapCreate',\
+;    HeapAlloc, 'HeapAlloc',\
+;    HeapDestroy, 'HeapDestroy'
     
 section '.edata' export data readable
 
