@@ -5,7 +5,7 @@ entry DllMain
 include 'include/win64a.inc'
 
 define array            rcx
-define arrayLength      r9
+;define arrayLength      [s_arrayLength]
 define distances        r8
 define mulv             r13
 define limit            r10
@@ -54,9 +54,13 @@ macro save_nonvolatile {
     movlpd [rsp], xmm6
     sub rsp, 8
     movlpd [rsp], xmm7
+    sub rsp, 8
+    movlpd [rsp], xmm8
 }
 
 macro restore_nonvolatile {
+    movlpd xmm8, [rsp]
+    add rsp, 8
     movlpd xmm7, [rsp]
     add rsp, 8
     movlpd xmm6, [rsp]
@@ -72,7 +76,7 @@ macro restore_nonvolatile {
 
 ; --> All macro parameters are registers, not constants or pointers.
 ; --> rax and rdx are volatile.
-; --> Expects (double)0.0 to be defined in xmm7.
+; --> Expects (double)0.0 to be defined in xmm8.
 macro handle {
     local return
     
@@ -96,7 +100,7 @@ macro handle {
     \}
     
     ; double v = 0
-    movsd v, xmm7
+    movsd v, xmm8
     
     ; int a = array[0]
     mov a, [array]
@@ -202,22 +206,22 @@ proc testcall
 endp
 
 ; double permute(uint64_t* array, uint64_t arrayLength, double* distances)
-proc permute s_array, s_arrayLength, s_distances, h_heap, p
+proc permute s_arrayLength, h_heap
     
     ; Save nonvolatile registers, as required by the calling convention
     save_nonvolatile
     
     ; Initialize registers
-    mov arrayLength, rdx        ; Move parameter out of volatile register
-    mov mulv, arrayLength
+    mov [s_arrayLength], rdx    ; Move parameter out of volatile register
+    mov mulv, rdx
     inc mulv                    ; mulv = arrayLength + 1
-    mov limit, arrayLength
+    mov limit, rdx
     dec limit                   ; limit = arrayLength - 1 = mul - 2
-    mov rax, arrayLength
+    mov rax, rdx
     mul mulv
     mov eA, rax                 ; eA = arrayLength * mulv
     
-    movlpd xmm7, [const.zero]   ; Load 0.0 constant into a secondary SSE register
+    movlpd xmm8, [const.zero]   ; Load 0.0 constant into a secondary SSE register
     
     ; double shortestDistance = 150000.0
     movlpd shortestDistance, [const.shortest]
@@ -230,33 +234,34 @@ proc permute s_array, s_arrayLength, s_distances, h_heap, p
     save_volatile
     invoke HeapCreate, 0, 0, 0
     mov [h_heap], rax
-    mov rdx, arrayLength
-    shl rdx, 3
-    invoke HeapAlloc, [h_heap], 0x8, rdx
-    mov p_array, rax
-    restore_volatile
+    mov r8, [s_arrayLength]
+    shl r8, 3
+    invoke HeapAlloc, rax, 0x8, r8
+    mov rdi, rax                ; Save return value in non-volatile register
+    restore_volatile            ; (p_array is an alias to a volatile register)
+    mov p_array, rdi
     
     ; int i = 1
     mov i, 1
     
+    mov p_active, p_array
+    add p_active, 8             ; p_active = &p[1]
+    mov rdx, [p_active]         ; rdx = p[1]
+    
     ; while (i < arrayLength)
     while_1:
-        cmp i, arrayLength
+        cmp i, [s_arrayLength]
         jae while_1_end
-        
-        mov p_active, i
-        shl p_active, 3
-        add p_active, p_array   ; p_active = p[i]
         
         ; while (p[i] < i)
         while_2:
-            cmp p_active, i
+            cmp rdx, i          ; if (p[i] < i) goto while_2_end
             jae while_2_end
             
             ; int j = i % 2 * p[i]
             mov rax, i
             and rax, 1          ; rax = i % 2
-            mul qword [p_active]; rax *= *p_active
+            mul rdx             ; rax *= p[i]
             
             ; xchg(array[i], array[j])
             shl rax, 3
@@ -266,12 +271,9 @@ proc permute s_array, s_arrayLength, s_distances, h_heap, p
             mov rdx, i
             shl rdx, 3
             add rdx, array      ; rdx = &array[i]
+            mov r9, [rdx]       ; r9 = array[i]
             
-            push rdi            ; save rdi
-            mov rdi, [rdx]      ; rdi = array[i]
-            mov [rax], rdi      ; array[j] = rdi
-            
-            pop rdi             ; restore rdi
+            mov [rax], r9       ; array[j] = r9
             mov [rdx], rdi      ; array[i] = rdi
         
             ; Handle permutation
@@ -283,14 +285,22 @@ proc permute s_array, s_arrayLength, s_distances, h_heap, p
             ; i = 1
             mov i, 1
             
+            mov p_active, p_array
+            add p_active, 8     ; p_active = &p[1]
+            mov rdx, [p_active] ; rdx = p[1]
+            
             jmp while_2
             while_2_end:
         
         ; p[i++] = 0
         inc i
-        add p_active, 8
         xor rax, rax
         mov [p_active], rax
+        
+        mov p_active, i
+        shl p_active, 3
+        add p_active, p_array
+        mov rdx, [p_active]     ; rdx = p[i]
         
         jmp while_1
         while_1_end:
@@ -307,6 +317,7 @@ proc permute s_array, s_arrayLength, s_distances, h_heap, p
     ; and not the (double) value as you should be. Check your code.
     mov rax, 0xFFFF
     restore_nonvolatile
+    
     ret
 endp
 
