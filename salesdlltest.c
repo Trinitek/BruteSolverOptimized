@@ -7,8 +7,11 @@ typedef double (*PERMUTE)(uint64_t array[], uint64_t arrayLength, double distanc
 void testPermute(uint64_t array[], uint64_t arrayLength, double distances[]);
 
 PERMUTE permute;
+LARGE_INTEGER frequency;
 
 int main(void) {
+    
+    QueryPerformanceFrequency(&frequency);
     
     HMODULE salesDll = WINAPI LoadLibrary("salesman.dll");
     if (salesDll == NULL) {
@@ -80,12 +83,12 @@ int main(void) {
 }
 
 void testPermute(uint64_t array[], uint64_t arrayLength, double distances[]) {
-    uint64_t start, finish;
-    start = GetTickCount64();
+    LARGE_INTEGER start, finish;
+    QueryPerformanceCounter(&start);
     double i = permute(array, arrayLength, distances);
-    finish = GetTickCount64();
+    QueryPerformanceCounter(&finish);
     printf("==============================\n");
     printf("Result: %f\n", i);
-    printf("Completed in %d milliseconds\n", (finish - start));
+    printf("Completed in %f milliseconds\n", (double)((finish.QuadPart - start.QuadPart)*1000)/frequency.QuadPart);
     return;
 }
