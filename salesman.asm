@@ -129,7 +129,7 @@ macro handle {
             ; v += distances[(a * mul) + (a = array[z])]
             addv1
             
-            comisd shortestDistance, v
+            ucomisd shortestDistance, v
                                 ; if v > shortestDistance then set CF
             jc return           ; if CF is set, return
             
@@ -151,7 +151,7 @@ macro handle {
         add rax, distances
         addsd v, [rax]
     
-        comisd v, shortestDistance
+        ucomisd v, shortestDistance
                                 ; if v < shortestDistance then set CF
         jnc if_2_end
     
@@ -170,7 +170,7 @@ macro handle {
             add rax, distances  ; rax = &distances[eA + array[limit]]
             addsd v, [rax]
         
-            comisd v, shortestDistance
+            ucomisd v, shortestDistance
                                 ; if v < shortestDistance then set CF
             jnc if_3_end
             movsd shortestDistance, v
