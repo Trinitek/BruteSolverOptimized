@@ -174,16 +174,6 @@ proc permute s_arrayLength
     mul mulv
     mov eA, rax                 ; eA = arrayLength * mulv
     
-    ; Prefetch array[] into CPU cache
-    mov rcx, [s_arrayLength]
-    shl rcx, 8
-    prefetchArray:
-        mov rax, array
-        prefetchnta [rax]
-        inc rax
-        loop prefetchArray
-        prefetchArray_end:
-    
     ; double shortestDistance = 150000.0
     movlpd shortestDistance, [const.shortest]
     
