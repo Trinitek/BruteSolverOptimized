@@ -71,14 +71,12 @@ macro handle {
     local for_1
     local for_1_end
     for_1:
-        cmp z, 5
-        ja for_1_end
-        
         ; v += distances[(a * mul) + (a = array[z])]
         addv1
         
         inc z
-        jmp for_1
+        cmp z, 5
+        jbe for_1
         
         for_1_end:
     
@@ -87,9 +85,6 @@ macro handle {
     local for_2
     local for_2_end
     for_2:
-        cmp z, limit
-        ja for_2_end
-        
         ; if ((v += distances[(a * mul) + (a = array[z])]) > shortestDistance)
         local if_1
         local if_1_end
@@ -104,7 +99,8 @@ macro handle {
             if_1_end:
         
         inc z
-        jmp for_2
+        cmp z, limit
+        jbe for_2
         
         for_2_end:
         
@@ -225,8 +221,8 @@ proc permute s_arrayLength
             add rdx, array      ; rdx = &array[i]
             mov r14, [rdx]
             
-            mov [rax], r14
-            mov [rdx], rdi      ; array[i] = rdi
+            mov [rax], r14      ; array[j] = r14 = array[i]
+            mov [rdx], rdi      ; array[i] = rdi = array[j]
         
             ; Handle permutation
             handle
