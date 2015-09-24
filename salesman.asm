@@ -166,7 +166,7 @@ proc testcall
 endp
 
 ; double permute(uint64_t* array, uint64_t arrayLength, double* distances, LPVOID heap_ptr)
-proc permute s_arrayLength, s_array_limit_ptr
+proc permute s_arrayLength
     
     ; Save nonvolatile registers, as required by the calling convention
     save_nonvolatile
