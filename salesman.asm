@@ -11,7 +11,7 @@ define limit            r10
 define eA               rbx
 define a                r11
 define z                r12
-define p_array          r9 ;r14
+define p_array          r9
 define p_active         rsi
 define i                r15
 define v                xmm1
@@ -27,9 +27,13 @@ macro save_volatile {
     push r11
     movsd xmm6, xmm0
     movsd xmm7, xmm1
+    sub rsp, 8
+    movlpd [rsp], xmm5
 }
 
 macro restore_volatile {
+    movlpd xmm5, [rsp]
+    add rsp, 8
     movsd xmm1, xmm7
     movsd xmm0, xmm6
     pop r11
@@ -53,13 +57,9 @@ macro save_nonvolatile {
     movlpd [rsp], xmm6
     sub rsp, 8
     movlpd [rsp], xmm7
-    sub rsp, 8
-    movlpd [rsp], xmm8
 }
 
 macro restore_nonvolatile {
-    movlpd xmm8, [rsp]
-    add rsp, 8
     movlpd xmm7, [rsp]
     add rsp, 8
     movlpd xmm6, [rsp]
@@ -75,23 +75,22 @@ macro restore_nonvolatile {
 
 ; --> All macro parameters are registers, not constants or pointers.
 ; --> rax and rdx are volatile.
-; --> Expects (double)0.0 to be defined in xmm8.
+; --> Expects (double)0.0 to be defined in xmm5.
 macro handle {
     local return
     
-    ; v += distances[(a * mul) + (a = array[z + 1])]
+    ; v += distances[(a * mul) + (a = array[z])]
     macro addv1 \{
         mov rax, a
         mul mulv                ; rax = a * mulv
         
         mov rdx, z
-        inc rdx
         shl rdx, 3
-        add rdx, array          ; rdx = &array[z + 1]
+        add rdx, array          ; rdx = &array[z]
         
-        mov a, [rdx]            ; a = array[z + 1]
+        mov a, [rdx]            ; a = array[z]
         
-        add rax, a              ; rax = (a * mul) + (a = array[z + 1])
+        add rax, a              ; rax = (a * mul) + (a = array[z])
         shl rax, 3
         add rax, distances      ; rax = &distances[rax]
         
@@ -99,20 +98,20 @@ macro handle {
     \}
     
     ; double v = 0
-    movsd v, xmm8
+    movsd v, xmm5
     
     ; int a = array[0]
     mov a, [array]
     
-    ; for (int z = 0; z < 5; z++)
-    xor z, z
+    ; for (int z = 1; z <= 5; z++)
+    mov z, 1
     local for_1
     local for_1_end
     for_1:
         cmp z, 5
-        jae for_1_end
+        ja for_1_end
         
-        ; v += distances[(a * mul) + (a = array[z + 1])]
+        ; v += distances[(a * mul) + (a = array[z])]
         addv1
         
         inc z
@@ -120,25 +119,24 @@ macro handle {
         
         for_1_end:
     
-    ; for (int z = 5; z < limit; z++)
+    ; for (; z <= limit; z++)
     ; Using z value from previous loop
     local for_2
     local for_2_end
     for_2:
         cmp z, limit
-        jae for_2_end
+        ja for_2_end
         
-        ; if ((v += distances[(a * mul) + (a = array[z + 1])]) > shortestDistance)
+        ; if ((v += distances[(a * mul) + (a = array[z])]) > shortestDistance)
         local if_1
         local if_1_end
         if_1:
-            ; v += distances[(a * mul) + (a = array[z + 1])]
+            ; v += distances[(a * mul) + (a = array[z])]
             addv1
             
             comisd shortestDistance, v
                                 ; if v > shortestDistance then set CF
-            jnc if_1_end        ; if CF is not set, escape
-            jmp return
+            jc return           ; if CF is set, return
             
             if_1_end:
         
@@ -205,7 +203,7 @@ proc testcall
 endp
 
 ; double permute(uint64_t* array, uint64_t arrayLength, double* distances, LPVOID heap_ptr)
-proc permute s_arrayLength ;, h_heap
+proc permute s_arrayLength, s_array_limit_ptr
     
     ; Save nonvolatile registers, as required by the calling convention
     save_nonvolatile
@@ -220,25 +218,17 @@ proc permute s_arrayLength ;, h_heap
     mul mulv
     mov eA, rax                 ; eA = arrayLength * mulv
     
-    movlpd xmm8, [const.zero]   ; Load 0.0 constant into a secondary SSE register
+    movlpd xmm5, [const.zero]   ; Load 0.0 constant into a secondary SSE register
     
     ; double shortestDistance = 150000.0
     movlpd shortestDistance, [const.shortest]
     
     ; Handle permutation for initial array value
     handle
-
-    ; Allocate (8 * (arrayLength)) bytes for the array, initialize to NULL
-    ; int[] p = new int[array.length];
-    ;save_volatile
-    ;invoke HeapCreate, 0, 0, 0
-    ;mov [h_heap], rax
-    ;mov r8, [s_arrayLength]
-    ;shl r8, 3
-    ;invoke HeapAlloc, rax, 0x8, r8
-    ;mov rdi, rax                ; Save return value in non-volatile register
-    ;restore_volatile            ; (p_array is an alias to a volatile register)
-    ;mov p_array, rdi
+    
+    ;;;
+    ;jmp $
+    ;;;
     
     ; int i = 1
     mov i, 1
@@ -270,10 +260,8 @@ proc permute s_arrayLength ;, h_heap
             mov rdx, i
             shl rdx, 3
             add rdx, array      ; rdx = &array[i]
-            ;mov r9, [rdx]       ; r9 = array[i]
             mov r14, [rdx]
             
-            ;mov [rax], r9       ; array[j] = r9
             mov [rax], r14
             mov [rdx], rdi      ; array[i] = rdi
         
@@ -308,9 +296,6 @@ proc permute s_arrayLength ;, h_heap
     
     ; Cleanup
     cleanup:
-    ;save_volatile
-    ;invoke HeapDestroy, [h_heap]
-    ;restore_volatile
     
     ; return shortestDistance
     ;
