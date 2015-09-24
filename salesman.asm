@@ -187,14 +187,11 @@ proc permute s_arrayLength
     
     ; while (i < arrayLength)
     while_1:
-        cmp i, [s_arrayLength]
-        jae while_1_end
-        
-        ; while (p[i] < i)
+    
+        ; while (p[i] < i)      ; !!! Program flow changed to if () {...}
+        cmp rdx, i              ; if (p[i] < i) goto while_2_end
+        jae while_2_end
         while_2:
-            cmp rdx, i          ; if (p[i] < i) goto while_2_end
-            jae while_2_end
-            
             ; int j = i % 2 * p[i]
             mov rax, i
             and rax, 1          ; rax = i % 2
@@ -226,7 +223,6 @@ proc permute s_arrayLength
             add p_active, 8     ; p_active = &p[1]
             mov rdx, [p_active] ; rdx = p[1]
             
-            jmp while_2
             while_2_end:
         
         ; p[i++] = 0
@@ -239,7 +235,8 @@ proc permute s_arrayLength
         add p_active, p_array
         mov rdx, [p_active]     ; rdx = p[i]
         
-        jmp while_1
+        cmp i, [s_arrayLength]
+        jb while_1
         while_1_end:
     
     ; Cleanup
