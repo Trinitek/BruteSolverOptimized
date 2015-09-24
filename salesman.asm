@@ -42,7 +42,7 @@ macro restore_nonvolatile {
 macro handle {
     local return
     
-    ; v += distances[(a * mul) + (a = array[z])]
+    ; v += distances[(a * mul) + (a = array[z++])]
     macro addv1 \{
         mov rax, a
         mul mulv                ; rax = a * mulv
@@ -58,6 +58,8 @@ macro handle {
         add rax, distances      ; rax = &distances[rax]
         
         addsd v, [rax]          ; v += distances[rax]
+        
+        inc z                   ; z++
     \}
     
     ; double v = 0
@@ -68,28 +70,21 @@ macro handle {
     
     ; for (int z = 1; z <= 5; z++)
     mov z, 1
-    local for_1
-    local for_1_end
-    for_1:
-        ; v += distances[(a * mul) + (a = array[z])]
+    repeat 5
+        ; v += distances[(a * mul) + (a = array[z++])]
         addv1
-        
-        inc z
-        cmp z, 5
-        jbe for_1
-        
-        for_1_end:
+    end repeat
     
     ; for (; z <= limit; z++)
     ; Using z value from previous loop
-    local for_2
-    local for_2_end
-    for_2:
-        ; if ((v += distances[(a * mul) + (a = array[z])]) > shortestDistance)
+    local for_1
+    local for_1_end
+    for_1:
+        ; if ((v += distances[(a * mul) + (a = array[z++])]) > shortestDistance)
         local if_1
         local if_1_end
         if_1:
-            ; v += distances[(a * mul) + (a = array[z])]
+            ; v += distances[(a * mul) + (a = array[z++])]
             addv1
             
             ucomisd shortestDistance, v
@@ -98,11 +93,10 @@ macro handle {
             
             if_1_end:
         
-        inc z
         cmp z, limit
-        jbe for_2
+        jbe for_1
         
-        for_2_end:
+        for_1_end:
         
     ; if ((v += distances[eA + array[0]]) < shortestDistance)
     local if_2
