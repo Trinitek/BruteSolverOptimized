@@ -27,13 +27,9 @@ macro save_volatile {
     push r11
     movsd xmm6, xmm0
     movsd xmm7, xmm1
-    sub rsp, 8
-    movlpd [rsp], xmm5
 }
 
 macro restore_volatile {
-    movlpd xmm5, [rsp]
-    add rsp, 8
     movsd xmm1, xmm7
     movsd xmm0, xmm6
     pop r11
@@ -75,7 +71,6 @@ macro restore_nonvolatile {
 
 ; --> All macro parameters are registers, not constants or pointers.
 ; --> rax and rdx are volatile.
-; --> Expects (double)0.0 to be defined in xmm5.
 macro handle {
     local return
     
@@ -98,7 +93,7 @@ macro handle {
     \}
     
     ; double v = 0
-    movsd v, xmm5
+    xorpd v, v
     
     ; int a = array[0]
     mov a, [array]
@@ -217,8 +212,6 @@ proc permute s_arrayLength, s_array_limit_ptr
     mov rax, rdx
     mul mulv
     mov eA, rax                 ; eA = arrayLength * mulv
-    
-    movlpd xmm5, [const.zero]   ; Load 0.0 constant into a secondary SSE register
     
     ; double shortestDistance = 150000.0
     movlpd shortestDistance, [const.shortest]
