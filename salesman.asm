@@ -17,30 +17,6 @@ define i                r15
 define v                xmm1
 define shortestDistance xmm0
 
-macro save_volatile {
-    push rax
-    push rcx
-    push rdx
-    push r8
-    push r9
-    push r10
-    push r11
-    movsd xmm6, xmm0
-    movsd xmm7, xmm1
-}
-
-macro restore_volatile {
-    movsd xmm1, xmm7
-    movsd xmm0, xmm6
-    pop r11
-    pop r10
-    pop r9
-    pop r8
-    pop rdx
-    pop rcx
-    pop rax
-}
-
 macro save_nonvolatile {
     push rbx
     push rsi
@@ -49,17 +25,9 @@ macro save_nonvolatile {
     push r13
     push r14
     push r15
-    sub rsp, 8
-    movlpd [rsp], xmm6
-    sub rsp, 8
-    movlpd [rsp], xmm7
 }
 
 macro restore_nonvolatile {
-    movlpd xmm7, [rsp]
-    add rsp, 8
-    movlpd xmm6, [rsp]
-    add rsp, 8
     pop r15
     pop r14
     pop r13
@@ -203,6 +171,8 @@ proc permute s_arrayLength, s_array_limit_ptr
     ; Save nonvolatile registers, as required by the calling convention
     save_nonvolatile
     
+    nop                         ; This boosts speed somehow. Alignment black magic?
+    
     ; Initialize registers
     mov [s_arrayLength], rdx    ; Move parameter out of volatile register
     mov mulv, rdx
@@ -303,9 +273,7 @@ endp
 section '.data' data readable
 
 const:
-    .zero dq 0.0
     .shortest dq 150000.0
-    .test dq 1234.0
 
 ;section '.idata' import data readable writeable
 ;
