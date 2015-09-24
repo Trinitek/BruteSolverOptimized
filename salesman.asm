@@ -161,8 +161,6 @@ proc permute s_arrayLength
     ; Save nonvolatile registers, as required by the calling convention
     save_nonvolatile
     
-    nop                         ; This boosts speed somehow. Alignment black magic?
-    
     ; Initialize registers
     mov array, rcx              ; Move parameters out of volatile registers
     mov [s_arrayLength], rdx    ; ...
@@ -179,10 +177,6 @@ proc permute s_arrayLength
     
     ; Handle permutation for initial array value
     handle
-    
-    ;;;
-    ;jmp $
-    ;;;
     
     ; int i = 1
     mov i, 1
