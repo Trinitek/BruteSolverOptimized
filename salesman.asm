@@ -4,7 +4,7 @@ entry DllMain
 
 include 'include/win64a.inc'
 
-define array            rcx
+define array            r14
 define distances        r8
 define mulv             r13
 define limit            r10
@@ -38,7 +38,7 @@ macro restore_nonvolatile {
 }
 
 ; --> All macro parameters are registers, not constants or pointers.
-; --> rax and rdx are volatile.
+; --> rax, rcx, and rdx are volatile.
 macro handle {
     local return
     
@@ -170,7 +170,8 @@ proc permute s_arrayLength
     nop                         ; This boosts speed somehow. Alignment black magic?
     
     ; Initialize registers
-    mov [s_arrayLength], rdx    ; Move parameter out of volatile register
+    mov array, rcx              ; Move parameters out of volatile registers
+    mov [s_arrayLength], rdx    ; ...
     mov mulv, rdx
     inc mulv                    ; mulv = arrayLength + 1
     mov limit, rdx
@@ -219,9 +220,9 @@ proc permute s_arrayLength
             mov rdx, i
             shl rdx, 3
             add rdx, array      ; rdx = &array[i]
-            mov r14, [rdx]
+            mov rcx, [rdx]
             
-            mov [rax], r14      ; array[j] = r14 = array[i]
+            mov [rax], rcx      ; array[j] = rcx = array[i]
             mov [rdx], rdi      ; array[i] = rdi = array[j]
         
             ; Handle permutation
