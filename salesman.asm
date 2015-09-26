@@ -169,7 +169,7 @@ proc testcall
     ret
 endp
 
-; double permute(uint64_t* array, uint64_t arrayLength, double* distances, LPVOID heap_ptr)
+; double permute(uint64_t* array, uint64_t arrayLength, double* distances)
 proc permute s_arrayLength, h_heap
     
     ; Save nonvolatile registers, as required by the calling convention
