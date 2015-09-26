@@ -1,5 +1,5 @@
-INCLUDE/
 java/
 .vs/
 *.exe
 *.dll
+salesman_defs.inc

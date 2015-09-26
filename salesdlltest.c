@@ -1,43 +1,42 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <windows.h>
 
-typedef double (*PERMUTE)(uint64_t array[], uint64_t arrayLength, double distances[], LPVOID heap_ptr);
-void testPermute(uint64_t array[], uint64_t arrayLength, double distances[]);
+typedef double (*PERMUTE)(uint64_t array[], uint64_t arrayLength, double distances[]);
+int testPermute(uint64_t array[], uint64_t arrayLength, double distances[]);
 
-PERMUTE permute;
 LARGE_INTEGER frequency;
-HANDLE h_heap;
 
 int main(void) {
     
     QueryPerformanceFrequency(&frequency);
     
-    HMODULE salesDll = WINAPI LoadLibrary("salesman.dll");
-    if (salesDll == NULL) {
-        printf("Could not import SALESMAN.DLL: 0x%x\n", GetLastError());
-        return 1;
-    } else {
-        printf("SALESMAN.DLL loaded at %x\n", salesDll);
-    }
-    
-    FARPROC testcall = WINAPI GetProcAddress(salesDll, "testcall");
-    if (testcall == NULL) {
-        printf("Could not find 'testcall' in library: 0x%x\n", GetLastError());
-        return 1;
-    } else {
-        printf("'testcall' found at %x\n", testcall);
-    }
-    printf("testcall(34) returns %d\n", (uint64_t)testcall(34));
-    
-    permute = (PERMUTE) GetProcAddress(salesDll, "permute");
-    if (permute == NULL) {
-        printf("Could not find 'permute' in library: 0x%x\n", GetLastError());
-        return 1;
-    } else {
-        printf("'permute' found at %x\n", permute);
-    }
+    //HMODULE salesDll = WINAPI LoadLibrary("salesman.dll");
+    //if (salesDll == NULL) {
+    //    printf("Could not import SALESMAN.DLL: 0x%x\n", GetLastError());
+    //    return 1;
+    //} else {
+    //    printf("SALESMAN.DLL loaded at %x\n", salesDll);
+    //}
+    //
+    //FARPROC testcall = WINAPI GetProcAddress(salesDll, "testcall");
+    //if (testcall == NULL) {
+    //    printf("Could not find 'testcall' in library: 0x%x\n", GetLastError());
+    //    return 1;
+    //} else {
+    //    printf("'testcall' found at %x\n", testcall);
+    //}
+    //printf("testcall(34) returns %d\n", (uint64_t)testcall(34));
+    //
+    //permute = (PERMUTE) GetProcAddress(salesDll, "permute");
+    //if (permute == NULL) {
+    //    printf("Could not find 'permute' in library: 0x%x\n", GetLastError());
+    //    return 1;
+    //} else {
+    //    printf("'permute' found at %x\n", permute);
+    //}
     
     uint64_t arrayLength_AB = 11;
     uint64_t array_A[11] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
@@ -80,30 +79,76 @@ int main(void) {
         95.26804291051643, 71.19691004531025, 130.38404810405297, 217.00691233230336, 168.1071087134628, 386.4932082197564, 62.42595614005443, 112.29425630903836, 227.98464860599717, 0.0, 102.20078277586722, 251.9622987670973, 
         193.6620768245554, 161.15210206509875, 196.51208614230322, 318.6989174754128, 166.68833192518306, 486.5757906020397, 80.2122185206219, 166.43617395265971, 293.62561196189955, 102.20078277586722, 0.0, 290.13100489261745, 
         213.76856644511605, 197.40820651634522, 365.32861919099633, 319.25068519895143, 419.30537797648145, 362.9931128823245, 216.9469981354893, 357.94552658190884, 83.57032966310472, 251.9622987670973, 290.13100489261745, 0.0};
- 
-    
-    h_heap = HeapCreate(0, 0, 0);
     
     testPermute(array_A, arrayLength_AB, distances_A);  // = 1335
     testPermute(array_B, arrayLength_AB, distances_B);  // = 1667
     testPermute(array_C, arrayLength_C, distances_C);   // = 1504
     
-    HeapDestroy(h_heap);
-    
     return 0;
 }
 
-void testPermute(uint64_t array[], uint64_t arrayLength, double distances[]) {
+int testPermute(uint64_t array[], uint64_t arrayLength, double distances[]) {
     
-    LPVOID heap_ptr = HeapAlloc(h_heap, 0x8, arrayLength * sizeof(uint64_t));
-    
+    const char* incName = "salesman_defs.inc";
+    char dllName[128];
+    char cmdLine[192];
+    DWORD dllAttrib;
+    STARTUPINFO cmdStartup = { sizeof(cmdStartup) };
+    PROCESS_INFORMATION cmdInfo;
+    HMODULE dllHandle;
+    FILE* salesdef;
+    PERMUTE permute;
     LARGE_INTEGER start, finish;
-    QueryPerformanceCounter(&start);
-    double i = permute(array, arrayLength, distances, heap_ptr);
-    QueryPerformanceCounter(&finish);
+    double i;
+    
     printf("==============================\n");
+    
+    sprintf(dllName, "sales_node_%d.dll\0", arrayLength + 1);
+    sprintf(cmdLine, "fasm salesman.asm %s\0", dllName);
+    FILE* testForDll = fopen(dllName, "r");
+    if (testForDll == NULL) {
+        printf("No DLL found for %d-node problems. Creating %s...\n", arrayLength + 1, dllName);
+        
+        salesdef = fopen(incName, "w");
+        if (salesdef == NULL) {
+            printf("Cannot open %s. Cannot continue.\n", incName);
+            return 1;
+        }
+        fprintf(salesdef, "define loopCount %d", arrayLength - 6);
+        fclose(salesdef);
+        
+        if (!CreateProcess(NULL, cmdLine, NULL, NULL, false, 0, NULL, NULL, &cmdStartup, &cmdInfo)) {
+            printf("Cannot spawn FASM: %d. Cannot continue.\n", GetLastError());
+            return 1;
+        }
+        WaitForSingleObject(cmdInfo.hProcess, INFINITE);
+        CloseHandle(cmdInfo.hProcess);
+        CloseHandle(cmdInfo.hThread);
+    } else {
+        fclose(testForDll);
+    }
+    
+    dllHandle = LoadLibrary(dllName);
+    if (dllHandle == NULL) {
+        printf("Could not import %s: 0x%x. Cannot continue.\n", dllName, GetLastError());
+        return 1;
+    } else {
+        printf("%s loaded at %x\n", dllName, dllHandle);
+    }
+    
+    permute = (PERMUTE) GetProcAddress(dllHandle, "permute");
+    if (permute == NULL) {
+        printf("Could not find 'permute' in library: 0x%x\n", GetLastError());
+        return 1;
+    } else {
+        printf("'permute' found at %x\n", permute);
+    }
+    
+    QueryPerformanceCounter(&start);
+    i = permute(array, arrayLength, distances);
+    QueryPerformanceCounter(&finish);
     printf("Result: %f\n", i);
     printf("Completed in %f milliseconds\n", (double)((finish.QuadPart - start.QuadPart)*1000)/frequency.QuadPart);
     
-    return;
+    return 0;
 }

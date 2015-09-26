@@ -3,6 +3,7 @@ format PE64 DLL
 entry DllMain
 
 include 'include/win64a.inc'
+include 'salesman_defs.inc'     ; Contains loopCount definition
 
 define array            r14
 define distances        r8
@@ -16,6 +17,30 @@ define p_active         rsi
 define i                r15
 define v                xmm1
 define shortestDistance xmm0
+
+macro save_volatile {
+    push rax
+    push rcx
+    push rdx
+    push r8
+    push r9
+    push r10
+    push r11
+    movsd xmm6, xmm0
+    movsd xmm7, xmm1
+}
+
+macro restore_volatile {
+    movsd xmm1, xmm7
+    movsd xmm0, xmm6
+    pop r11
+    pop r10
+    pop r9
+    pop r8
+    pop rdx
+    pop rcx
+    pop rax
+}
 
 macro save_nonvolatile {
     push rbx
@@ -77,26 +102,15 @@ macro handle {
     
     ; for (; z <= limit; z++)
     ; Using z value from previous loop
-    local for_1
-    local for_1_end
-    for_1:
-        ; if ((v += distances[(a * mul) + (a = array[z++])]) > shortestDistance)
-        local if_1
-        local if_1_end
-        if_1:
-            ; v += distances[(a * mul) + (a = array[z++])]
-            addv1
-            
-            ucomisd shortestDistance, v
-                                ; if v > shortestDistance then set CF
-            jc return           ; if CF is set, return
-            
-            if_1_end:
+    ; loopCount is defined in 'salesman_defs.inc'
+    repeat loopCount
+        ; v += distances[(a * mul) + (a = array[z++])]
+        addv1
         
-        cmp z, limit
-        jbe for_1
-        
-        for_1_end:
+        ; if (v > shortestDistance) return
+        ucomisd shortestDistance, v
+        jc return
+    end repeat
         
     ; if ((v += distances[eA + array[0]]) < shortestDistance)
     local if_2
@@ -156,7 +170,7 @@ proc testcall
 endp
 
 ; double permute(uint64_t* array, uint64_t arrayLength, double* distances, LPVOID heap_ptr)
-proc permute s_arrayLength
+proc permute s_arrayLength, h_heap
     
     ; Save nonvolatile registers, as required by the calling convention
     save_nonvolatile
@@ -171,6 +185,19 @@ proc permute s_arrayLength
     mov rax, rdx
     mul mulv
     mov eA, rax                 ; eA = arrayLength * mulv
+    
+    ; Create a handle to a new private heap
+    save_volatile
+    invoke HeapCreate, 0, 0, 0
+    mov [h_heap], rax
+    
+    ; int[] p = new int[arrayLength];
+    mov z, [s_arrayLength]
+    shl z, 3
+    invoke HeapAlloc, rax, 0x8, z
+    mov i, rax                  ; Save pointer to p[] to non-volatile register
+    restore_volatile
+    mov p_array, i              ; p_array = p[]
     
     ; double shortestDistance = 150000.0
     movlpd shortestDistance, [const.shortest]
@@ -243,6 +270,9 @@ proc permute s_arrayLength
     
     ; Cleanup
     cleanup:
+    save_volatile
+    invoke HeapDestroy, [h_heap]
+    restore_volatile
     
     ; return shortestDistance
     ;
@@ -259,13 +289,13 @@ section '.data' data readable
 const:
     .shortest dq 150000.0
 
-;section '.idata' import data readable writeable
-;
-;library kernel32,'KERNEL32.DLL'
-;import kernel32,\
-;    HeapCreate, 'HeapCreate',\
-;    HeapAlloc, 'HeapAlloc',\
-;    HeapDestroy, 'HeapDestroy'
+section '.idata' import data readable writeable
+
+library kernel32,'KERNEL32.DLL'
+import kernel32,\
+    HeapCreate, 'HeapCreate',\
+    HeapAlloc, 'HeapAlloc',\
+    HeapDestroy, 'HeapDestroy'
     
 section '.edata' export data readable
 
