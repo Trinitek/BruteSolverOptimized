@@ -2,7 +2,7 @@
 format PE64 DLL
 entry DllMain
 
-include 'include/win64a.inc'
+include 'fasm_include/win64a.inc'
 include 'salesman_defs.inc'     ; Contains loopCount definition
 
 define array            r14
