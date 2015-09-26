@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <windows.h>
 
-typedef double (*PERMUTE)(uint64_t array[], uint64_t arrayLength, double distances[]);
+typedef double (*PERMUTE)(uint64_t array[], uint64_t arrayLength, double distances[], LPVOID heap_ptr);
 void testPermute(uint64_t array[], uint64_t arrayLength, double distances[]);
 
 PERMUTE permute;
@@ -80,19 +80,26 @@ int main(void) {
         95.26804291051643, 71.19691004531025, 130.38404810405297, 217.00691233230336, 168.1071087134628, 386.4932082197564, 62.42595614005443, 112.29425630903836, 227.98464860599717, 0.0, 102.20078277586722, 251.9622987670973, 
         193.6620768245554, 161.15210206509875, 196.51208614230322, 318.6989174754128, 166.68833192518306, 486.5757906020397, 80.2122185206219, 166.43617395265971, 293.62561196189955, 102.20078277586722, 0.0, 290.13100489261745, 
         213.76856644511605, 197.40820651634522, 365.32861919099633, 319.25068519895143, 419.30537797648145, 362.9931128823245, 216.9469981354893, 357.94552658190884, 83.57032966310472, 251.9622987670973, 290.13100489261745, 0.0};
+ 
+    
+    h_heap = HeapCreate(0, 0, 0);
     
     testPermute(array_A, arrayLength_AB, distances_A);  // = 1335
     testPermute(array_B, arrayLength_AB, distances_B);  // = 1667
     testPermute(array_C, arrayLength_C, distances_C);   // = 1504
+    
+    HeapDestroy(h_heap);
     
     return 0;
 }
 
 void testPermute(uint64_t array[], uint64_t arrayLength, double distances[]) {
     
+    LPVOID heap_ptr = HeapAlloc(h_heap, 0x8, arrayLength * sizeof(uint64_t));
+    
     LARGE_INTEGER start, finish;
     QueryPerformanceCounter(&start);
-    double i = permute(array, arrayLength, distances);
+    double i = permute(array, arrayLength, distances, heap_ptr);
     QueryPerformanceCounter(&finish);
     printf("==============================\n");
     printf("Result: %f\n", i);
