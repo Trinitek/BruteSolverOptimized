@@ -1,5 +1,5 @@
 java/
 .vs/
-*.exe
 *.dll
+salesdlltest.exe
 salesman_defs.inc
