@@ -71,17 +71,10 @@ macro handle {
         mov rax, a
         mul mulv                ; rax = a * mulv
         
-        mov rdx, z
-        shl rdx, 3
-        add rdx, array          ; rdx = &array[z]
+        mov a, [array + z * 8]  ; a = array[z]
+        add rax, a
         
-        mov a, [rdx]            ; a = array[z]
-        
-        add rax, a              ; rax = (a * mul) + (a = array[z])
-        shl rax, 3
-        add rax, distances      ; rax = &distances[rax]
-        
-        addsd v, [rax]          ; v += distances[rax]
+        addsd v, [distances + rax * 8]
         
         inc z                   ; z++
     \}
@@ -127,11 +120,10 @@ macro handle {
     local if_2_end
     if_2:
         ; v += distances[eA + array[0]]
-        mov rax, eA
-        add rax, [array]
-        shl rax, 3
-        add rax, distances
-        addsd v, [rax]
+        mov rax, [array]
+        add rax, eA
+        
+        addsd v, [distances + rax * 8]
     
         ucomisd v, shortestDistance
                                 ; if v < shortestDistance then set CF
@@ -142,15 +134,10 @@ macro handle {
         local if_3_end
         if_3:
             ; v += distances[eA + array[limit]]
-            mov rax, limit
-            shl rax, 3
-            add rax, array
-            mov rax, [rax]      ; rax = array[limit]
-            
+            mov rax, [array + limit * 8]
             add rax, eA
-            shl rax, 3
-            add rax, distances  ; rax = &distances[eA + array[limit]]
-            addsd v, [rax]
+            
+            addsd v, [distances + rax * 8]
         
             ucomisd v, shortestDistance
                                 ; if v < shortestDistance then set CF
@@ -218,8 +205,7 @@ proc permute s_arrayLength, h_heap
     ; int i = 1
     mov i, 1
     
-    mov p_active, p_array
-    add p_active, 8             ; p_active = &p[1]
+    lea p_active, [p_array + 8]
     mov rdx, [p_active]         ; rdx = p[1]
     
     ; while (i < arrayLength)
@@ -236,13 +222,10 @@ proc permute s_arrayLength, h_heap
             mul rdx             ; rax *= p[i]
             
             ; xchg(array[i], array[j])
-            shl rax, 3
-            add rax, array      ; rax = &array[j]
-            mov rdi, [rax]      ; rdi = array[j]
+            lea rax, [array + rax * 8]
+            mov rdi, [rax]
             
-            mov rdx, i
-            shl rdx, 3
-            add rdx, array      ; rdx = &array[i]
+            lea rdx, [array + i * 8]
             mov rcx, [rdx]
             
             mov [rax], rcx      ; array[j] = rcx = array[i]
@@ -257,8 +240,7 @@ proc permute s_arrayLength, h_heap
             ; i = 1
             mov i, 1
             
-            mov p_active, p_array
-            add p_active, 8     ; p_active = &p[1]
+            lea p_active, [p_array + 8]
             mov rdx, [p_active] ; rdx = p[1]
             
             jmp while_2
@@ -269,9 +251,7 @@ proc permute s_arrayLength, h_heap
         xor rax, rax
         mov [p_active], rax
         
-        mov p_active, i
-        shl p_active, 3
-        add p_active, p_array
+        lea p_active, [p_array + i * 8]
         mov rdx, [p_active]     ; rdx = p[i]
         
         cmp i, [s_arrayLength]
