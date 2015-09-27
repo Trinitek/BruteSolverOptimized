@@ -14,8 +14,6 @@ int main(void) {
     
     QueryPerformanceFrequency(&frequency);
     
-<<<<<<< HEAD
-=======
     HMODULE salesDll = WINAPI LoadLibrary("salesman.dll");
     if (salesDll == NULL) {
         printf("Could not import SALESMAN.DLL: 0x%x\n", GetLastError());
@@ -41,7 +39,6 @@ int main(void) {
         printf("'permute' found at %x\n", permute);
     }
     
->>>>>>> parent of ef694bb... Now uses FASM to generate DLLs on-the-fly
     uint64_t arrayLength_AB = 11;
     uint64_t array_A[11] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 	double distances_A[144] = {0.0, 242.3984323381651, 144.5856147754679, 227.79376637651873, 223.70739817896055, 130.4837154590564, 164.7573974060042, 137.44089638822936, 129.0968628588627, 295.526648544594, 289.33890163612637, 191.36614120580475, 

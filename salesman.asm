@@ -2,12 +2,7 @@
 format PE64 DLL
 entry DllMain
 
-<<<<<<< HEAD
-include 'fasm_include/win64a.inc'
-include 'salesman_defs.inc'     ; Contains loopCount definition
-=======
 include 'include/win64a.inc'
->>>>>>> parent of ef694bb... Now uses FASM to generate DLLs on-the-fly
 
 define array            r14
 define distances        r8
@@ -160,13 +155,8 @@ proc testcall
     ret
 endp
 
-<<<<<<< HEAD
 ; double permute(uint64_t* array, uint64_t arrayLength, double* distances)
 proc permute s_arrayLength, h_heap
-=======
-; double permute(uint64_t* array, uint64_t arrayLength, double* distances, LPVOID heap_ptr)
-proc permute s_arrayLength
->>>>>>> parent of ef694bb... Now uses FASM to generate DLLs on-the-fly
     
     ; Save nonvolatile registers, as required by the calling convention
     save_nonvolatile
@@ -269,8 +259,8 @@ section '.data' data readable
 const:
     .shortest dq 150000.0
 
-;section '.idata' import data readable writeable
-;
+section '.idata' import data readable writeable
+
 ;library kernel32,'KERNEL32.DLL'
 ;import kernel32,\
 ;    HeapCreate, 'HeapCreate',\
