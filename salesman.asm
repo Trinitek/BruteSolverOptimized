@@ -17,6 +17,30 @@ define i                r15
 define v                xmm1
 define shortestDistance xmm0
 
+macro save_volatile {
+    push rax
+    push rcx
+    push rdx
+    push r8
+    push r9
+    push r10
+    push r11
+    movsd xmm6, xmm0
+    movsd xmm7, xmm1
+}
+
+macro restore_volatile {
+    movsd xmm1, xmm7
+    movsd xmm0, xmm6
+    pop r11
+    pop r10
+    pop r9
+    pop r8
+    pop rdx
+    pop rcx
+    pop rax
+}
+
 macro save_nonvolatile {
     push rbx
     push rsi
@@ -172,6 +196,19 @@ proc permute s_arrayLength, h_heap
     mul mulv
     mov eA, rax                 ; eA = arrayLength * mulv
     
+    ; Create a handle to a new private heap
+    save_volatile
+    invoke HeapCreate, 0, 0, 0
+    mov [h_heap], rax
+    
+    ; int[] p = new int[arrayLength];
+    mov z, [s_arrayLength]
+    shl z, 3
+    invoke HeapAlloc, rax, 0x8, z
+    mov i, rax                  ; Save pointer to p[] to non-volatile register
+    restore_volatile
+    mov p_array, i              ; p_array = p[]
+    
     ; double shortestDistance = 150000.0
     movlpd shortestDistance, [const.shortest]
     
@@ -243,6 +280,9 @@ proc permute s_arrayLength, h_heap
     
     ; Cleanup
     cleanup:
+    save_volatile
+    invoke HeapDestroy, [h_heap]
+    restore_volatile
     
     ; return shortestDistance
     ;
@@ -261,11 +301,11 @@ const:
 
 section '.idata' import data readable writeable
 
-;library kernel32,'KERNEL32.DLL'
-;import kernel32,\
-;    HeapCreate, 'HeapCreate',\
-;    HeapAlloc, 'HeapAlloc',\
-;    HeapDestroy, 'HeapDestroy'
+library kernel32,'KERNEL32.DLL'
+import kernel32,\
+    HeapCreate, 'HeapCreate',\
+    HeapAlloc, 'HeapAlloc',\
+    HeapDestroy, 'HeapDestroy'
     
 section '.edata' export data readable
 
