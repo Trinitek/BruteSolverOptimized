@@ -201,9 +201,9 @@ proc permute s_arrayLength, h_heap
     while_1:
     
         ; while (p[i] < i)
+        cmp rdx, i
         while_2:
-            cmp rdx, i          ; if (p[i] < i) goto while_2_end
-            jae while_2_end
+            jae while_2_end     ; if (p[i] < i) goto while_2_end
             
             ; int j = i % 2 * p[i]
             mov rax, i
@@ -220,19 +220,17 @@ proc permute s_arrayLength, h_heap
             mov [rax], rcx      ; array[j] = rcx = array[i]
             mov [rdx], rdi      ; array[i] = rdi = array[j]
         
-            ; Handle permutation
-            handle
+            handle              ; Handle permutation
         
-            ; p[i]++
-            inc qword [p_active]
+            inc qword [p_active]; p[i]++
             
-            ; i = 1
-            mov i, 1
+            mov i, 1            ; i = 1
             
             lea p_active, [p_array + 8]
             mov rdx, [p_active] ; rdx = p[1]
             
-            jmp while_2
+            cmp rdx, i          ; if (p[i] < i goto while_2_end)
+            jb while_2
             while_2_end:
         
         ; p[i++] = 0
