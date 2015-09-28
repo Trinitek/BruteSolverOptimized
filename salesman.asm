@@ -92,6 +92,11 @@ macro handle {
         addv1
     end repeat
     
+    ; v += distances[eA + array[0]]
+    mov rax, [array]
+    add rax, eA
+    addsd v, [distances + rax * 8]
+    
     ; for (; z <= limit; z++)
     ; Using z value from previous loop
     local for_1
@@ -115,39 +120,23 @@ macro handle {
         
         for_1_end:
         
-    ; if ((v += distances[eA + array[0]]) < shortestDistance)
+    ; if ((v += distances[eA + array[limit]]) < shortestDistance)
     local if_2
     local if_2_end
     if_2:
-        ; v += distances[eA + array[0]]
-        mov rax, [array]
+        ; v += distances[eA + array[limit]]
+        mov rax, [array + limit * 8]
         add rax, eA
         
         addsd v, [distances + rax * 8]
     
         ucomisd v, shortestDistance
-                                ; if v < shortestDistance then set CF
+                            ; if v < shortestDistance then set CF
         jnc if_2_end
-    
-        ; if ((v += distances[eA + array[limit]]) < shortestDistance)
-        local if_3
-        local if_3_end
-        if_3:
-            ; v += distances[eA + array[limit]]
-            mov rax, [array + limit * 8]
-            add rax, eA
-            
-            addsd v, [distances + rax * 8]
-        
-            ucomisd v, shortestDistance
-                                ; if v < shortestDistance then set CF
-            jnc if_3_end
-            movsd shortestDistance, v
-                                ; shortestDistance = v
-        
-            if_3_end:
-    
-        if_2_end:
+        movsd shortestDistance, v
+                            ; shortestDistance = v
+
+    if_2_end:
     
     return:
 }
