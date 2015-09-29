@@ -148,13 +148,6 @@ proc DllMain hinstDLL, fdwReason, lpvReserved
     ret
 endp
 
-; uint64_t testcall(uint64_t x)
-proc testcall
-    mov rax, rcx
-    inc rax
-    ret
-endp
-
 ; double permute(uint64_t* array, uint64_t arrayLength, double* distances)
 proc permute s_arrayLength, h_heap
     
@@ -277,8 +270,7 @@ import kernel32,\
 section '.edata' export data readable
 
 export 'salesman.dll',\
-    permute, 'permute',\
-    testcall, 'testcall'
+    permute, 'permute'
 
 data fixups
 end data

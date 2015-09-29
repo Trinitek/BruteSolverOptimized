@@ -14,22 +14,13 @@ int main(void) {
     
     QueryPerformanceFrequency(&frequency);
     
-    HMODULE salesDll = WINAPI LoadLibrary("salesman.dll");
+    HMODULE salesDll = LoadLibrary("salesman.dll");
     if (salesDll == NULL) {
         printf("Could not import SALESMAN.DLL: 0x%x\n", GetLastError());
         return 1;
     } else {
         printf("SALESMAN.DLL loaded at %x\n", salesDll);
     }
-    
-    FARPROC testcall = WINAPI GetProcAddress(salesDll, "testcall");
-    if (testcall == NULL) {
-        printf("Could not find 'testcall' in library: 0x%x\n", GetLastError());
-        return 1;
-    } else {
-        printf("'testcall' found at %x\n", testcall);
-    }
-    printf("testcall(34) returns %d\n", (uint64_t)testcall(34));
     
     permute = (PERMUTE) GetProcAddress(salesDll, "permute");
     if (permute == NULL) {
