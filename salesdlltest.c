@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <windows.h>
+#include "salesman.h"
 
-typedef double (*PERMUTE)(uint64_t array[], uint64_t arrayLength, double distances[]);
 void testPermute(uint64_t array[], uint64_t arrayLength, double distances[]);
 
 PERMUTE permute;
