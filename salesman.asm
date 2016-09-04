@@ -86,7 +86,8 @@ macro handle {
     mov a, [array]
     
     ; for (int z = 1; z <= 5; z++)
-    mov z, 1
+    ; loop is expanded, so z is set to the stopping value
+    mov z, 5
     repeat 5
         ; v += distances[(a * mul) + (a = array[z++])]
         addv1
